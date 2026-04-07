@@ -465,6 +465,7 @@
             <label>Basemap (labels/style)</label>
             <select id="basemapSelect">
               <option value="esriImgLbl" selected>Esri Imagery + Labels (default)</option>
+              <option value="esriTerrainLbl">ArcGIS Terrain with Labels</option>
               <option value="esriImg">Esri World Imagery (no labels)</option>
               <option value="osmStd">OSM Standard (local labels)</option>
               <option value="osmDE">OSM DE (Latin transliteration)</option>
@@ -855,6 +856,14 @@
       labelsUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
       labelsOpts: { maxZoom: 19 }
     },
+    esriTerrainLbl: {
+      label: "ArcGIS Terrain with Labels",
+      kind: "esriBaseReference",
+      baseUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}",
+      baseOpts: { maxZoom: 13, attribution: 'Tiles &copy; Esri' },
+      referenceUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}",
+      referenceOpts: { maxZoom: 13 }
+    },
     esriImg: {
       label: "Esri World Imagery (no labels)",
       url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -911,12 +920,18 @@
   const createBaseLayer = (key, map) => {
     const def = baseDefs[key] || baseDefs.esriImgLbl || baseDefs.osmStd;
 
-    // Esri Imagery + Labels (two layers)
+    // Esri basemaps composed of a base layer plus a reference/label overlay
     if (def.kind === "esriImageryLabels") {
       ensureLabelsPane(map);
       const imagery = L.tileLayer(def.imageryUrl, def.imageryOpts || {});
       const labels  = L.tileLayer(def.labelsUrl, Object.assign({}, def.labelsOpts || {}, { pane: "labelsPane" }));
       return L.layerGroup([imagery, labels]);
+    }
+    if (def.kind === "esriBaseReference") {
+      ensureLabelsPane(map);
+      const baseLayer = L.tileLayer(def.baseUrl, def.baseOpts || {});
+      const referenceLayer = L.tileLayer(def.referenceUrl, Object.assign({}, def.referenceOpts || {}, { pane: "labelsPane" }));
+      return L.layerGroup([baseLayer, referenceLayer]);
     }
 
     // Regular single-layer basemaps
